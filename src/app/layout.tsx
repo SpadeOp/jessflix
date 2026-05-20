@@ -3,17 +3,19 @@ import "./globals.css"
 import Sidebar from "@/components/Sidebar"
 
 export const metadata: Metadata = {
-  title: "JessFlix - Watch Movies & TV Shows",
-  description: "Stream your favorite movies and TV shows in HD quality",
+  title: "JessFlix - Stream Movies & TV Shows",
+  description: "Watch free movies and TV shows online",
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
-      <body className="bg-[#0a0a0a] text-white antialiased">
-        <div className="flex min-h-screen">
+      <body>
+        <div className="app-layout">
           <Sidebar />
-          <main className="flex-1 min-h-screen overflow-hidden lg:ml-64">{children}</main>
+          <main className="main-content">
+            {children}
+          </main>
         </div>
       </body>
     </html>

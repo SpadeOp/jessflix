@@ -1,93 +1,93 @@
 "use client"
 
-import { Suspense, useState, useEffect } from "react"
+import { Suspense, useEffect, useState, useCallback } from "react"
 import { useSearchParams, useRouter } from "next/navigation"
-import MovieCard from "@/components/MovieCard"
 import { searchMulti } from "@/lib/tmdb"
-import type { Movie, TVShow } from "@/types"
+import { fallbackMovies } from "@/lib/data"
+import MovieCard from "@/components/MovieCard"
 
-function SearchContent() {
-  const searchParams = useSearchParams()
+function SearchInner() {
   const router = useRouter()
-  const q = searchParams.get("q") || ""
+  const params = useSearchParams()
+  const q = params.get("q") || ""
   const [query, setQuery] = useState(q)
-  const [results, setResults] = useState<(Movie | TVShow)[]>([])
+  const [results, setResults] = useState<any[]>([])
   const [loading, setLoading] = useState(false)
 
-  useEffect(() => {
-    if (!q) { setResults([]); return }
+  const doSearch = useCallback(async (term: string) => {
+    if (!term.trim()) { setResults([]); return }
     setLoading(true)
-    searchMulti(q).then((data) => {
-      setResults(data.results?.filter((r: any) => r.media_type !== "person") || [])
+    try {
+      const data = await searchMulti(term)
+      setResults(data.results?.filter((r: any) => r.poster_path && (r.media_type === "movie" || r.media_type === "tv")) || [])
+    } catch {
+      const fb = fallbackMovies.filter(m =>
+        m.title.toLowerCase().includes(term.toLowerCase())
+      )
+      setResults(fb.map(m => ({
+        id: m.id,
+        title: m.title,
+        poster_path: m.poster,
+        release_date: `${m.year}-01-01`,
+        vote_average: m.rating,
+        media_type: "movie",
+      })))
+    } finally {
       setLoading(false)
-    }).catch(() => setLoading(false))
-  }, [q])
+    }
+  }, [])
 
-  const handleSearch = (e: React.FormEvent) => {
+  useEffect(() => {
+    if (q) doSearch(q)
+  }, [q, doSearch])
+
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    if (query.trim()) router.push(`/search?q=${encodeURIComponent(query.trim())}`)
+    if (query.trim()) {
+      router.push(`/search?q=${encodeURIComponent(query.trim())}`)
+    }
   }
 
   return (
-    <div className="pt-20 px-6 pb-12">
-      <form onSubmit={handleSearch} className="max-w-2xl mx-auto mb-8">
-        <div className="relative">
+    <div className="search-page">
+      <form onSubmit={handleSubmit} style={{ marginBottom: 32 }}>
+        <div className="header-search" style={{ maxWidth: 500, borderRadius: 12 }}>
+          <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          </svg>
           <input
             type="text"
+            placeholder="Search movies & TV..."
             value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search movies, TV shows..."
-            className="w-full px-5 py-3.5 bg-zinc-900 border border-zinc-700 rounded-xl text-white placeholder-zinc-500 focus:outline-none focus:border-red-600 transition-colors text-lg"
+            onChange={e => setQuery(e.target.value)}
+            autoFocus
           />
-          <button
-            type="submit"
-            className="absolute right-2 top-1/2 -translate-y-1/2 px-4 py-2 bg-red-600 hover:bg-red-700 rounded-lg text-white transition-colors"
-          >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-            </svg>
-          </button>
         </div>
       </form>
 
-      {loading && (
-        <div className="flex justify-center py-12">
-          <div className="w-8 h-8 border-2 border-red-600 border-t-transparent rounded-full animate-spin" />
+      {q && (
+        <p className="search-results-count">
+          {loading ? "Searching..." : `${results.length} results for "${q}"`}
+        </p>
+      )}
+
+      {results.length > 0 ? (
+        <div className="movie-grid">
+          {results.map((item: any) => (
+            <MovieCard key={item.id} item={item} />
+          ))}
         </div>
-      )}
-
-      {!loading && q && results.length === 0 && (
-        <p className="text-center text-zinc-500 py-12">No results found for &quot;{q}&quot;</p>
-      )}
-
-      {!loading && results.length > 0 && (
-        <>
-          <p className="text-zinc-400 mb-6">
-            Results for <span className="text-white font-medium">&quot;{q}&quot;</span>
-          </p>
-          <div className="flex flex-wrap gap-4 justify-center">
-            {results.map((item) => (
-              <MovieCard
-                key={item.id}
-                id={item.id}
-                title={(item as any).title || (item as any).name || ""}
-                poster={(item as any).poster_path}
-                rating={(item as any).vote_average || 0}
-                year={((item as any).release_date || (item as any).first_air_date || "").split("-")[0]}
-                mediaType={(item as any).media_type === "tv" ? "tv" : "movie"}
-              />
-            ))}
-          </div>
-        </>
-      )}
+      ) : q && !loading ? (
+        <p style={{ color: "var(--text-muted)" }}>No results found</p>
+      ) : null}
     </div>
   )
 }
 
 export default function SearchPage() {
   return (
-    <Suspense fallback={<div className="pt-20 px-6 pb-12 text-center text-zinc-500">Loading...</div>}>
-      <SearchContent />
+    <Suspense fallback={<div className="search-page"><p>Loading...</p></div>}>
+      <SearchInner />
     </Suspense>
   )
 }

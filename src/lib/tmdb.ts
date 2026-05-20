@@ -1,81 +1,85 @@
-const TMDB_BASE = "https://api.themoviedb.org/3"
 const API_KEY = "986cbbcc2f29966e58658da1746adfff"
+const BASE = "https://api.themoviedb.org/3"
+const IMG = "https://image.tmdb.org/t/p/"
+const TIMEOUT = 5000
 
-const options = {
-  headers: { Authorization: `Bearer ${API_KEY}`, "Content-Type": "application/json" },
-}
-
-const emptyResponse = { page: 1, results: [], total_pages: 0, total_results: 0 }
-
-async function fetchTMDB<T>(endpoint: string, params = ""): Promise<T> {
-  const url = `${TMDB_BASE}${endpoint}?language=en-US${params}`
+async function fetchJson(url: string) {
+  const ctrl = new AbortController()
+  const id = setTimeout(() => ctrl.abort(), TIMEOUT)
   try {
-    const res = await fetch(url, { ...options })
-    if (!res.ok) throw new Error(`TMDB error: ${res.status}`)
-    return res.json()
-  } catch {
-    return emptyResponse as T
+    const r = await fetch(url, { signal: ctrl.signal })
+    clearTimeout(id)
+    if (!r.ok) throw new Error(`${r.status}`)
+    return await r.json()
+  } catch (e) {
+    clearTimeout(id)
+    throw e
   }
 }
 
-export async function getTrending(page = 1) {
-  return fetchTMDB<any>(`/trending/all/week`, `&page=${page}`)
+export async function tmdbFetch(endpoint: string) {
+  return fetchJson(`${BASE}${endpoint}${endpoint.includes("?") ? "&" : "?"}api_key=${API_KEY}&language=en-US`)
 }
 
-export async function getTrendingMovie(page = 1) {
-  return fetchTMDB<any>(`/trending/movie/week`, `&page=${page}`)
+export async function tmdbFetchAll(endpoints: string[]) {
+  const results = await Promise.allSettled(endpoints.map(e => tmdbFetch(e)))
+  return results.map(r => r.status === "fulfilled" ? r.value : null)
 }
 
-export async function getTrendingTV(page = 1) {
-  return fetchTMDB<any>(`/trending/tv/week`, `&page=${page}`)
+export async function discoverMovies(page = 1) {
+  return tmdbFetch(`/discover/movie?sort_by=popularity.desc&page=${page}`)
 }
 
-export async function getPopularMovies(page = 1) {
-  return fetchTMDB<any>(`/movie/popular`, `&page=${page}&region=US`)
+export async function getMovie(id: number) {
+  return tmdbFetch(`/movie/${id}?append_to_response=credits,recommendations`)
 }
 
-export async function getPopularTV(page = 1) {
-  return fetchTMDB<any>(`/tv/popular`, `&page=${page}`)
+export async function getTV(id: number) {
+  return tmdbFetch(`/tv/${id}?append_to_response=credits,recommendations`)
 }
 
-export async function getNowPlaying(page = 1) {
-  return fetchTMDB<any>(`/movie/now_playing`, `&page=${page}&region=US`)
+export async function searchMulti(query: string) {
+  return tmdbFetch(`/search/multi?query=${encodeURIComponent(query)}`)
 }
 
-export async function getAiringToday(page = 1) {
-  return fetchTMDB<any>(`/tv/airing_today`, `&page=${page}`)
+export async function getTrending() {
+  return tmdbFetch(`/trending/all/week`)
 }
 
-export async function getTopRated(page = 1) {
-  return fetchTMDB<any>(`/movie/top_rated`, `&page=${page}`)
+export async function getPopular() {
+  return tmdbFetch(`/movie/popular`)
 }
 
-export async function getMovieDetails(id: number) {
-  return fetchTMDB<any>(`/movie/${id}`, `&append_to_response=credits,videos,similar,recommendations,external_ids`)
+export async function getTopRated() {
+  return tmdbFetch(`/movie/top_rated`)
 }
 
-export async function getTVDetails(id: number) {
-  return fetchTMDB<any>(`/tv/${id}`, `&append_to_response=credits,external_ids,recommendations`)
+export async function getNowPlaying() {
+  return tmdbFetch(`/movie/now_playing`)
 }
 
-export async function getTVSeasonDetails(id: number, season: number) {
-  return fetchTMDB<any>(`/tv/${id}/season/${season}`)
+export async function getUpcoming() {
+  return tmdbFetch(`/movie/upcoming`)
 }
 
-export async function getTVEpisodeDetails(id: number, season: number, episode: number) {
-  return fetchTMDB<any>(`/tv/${id}/season/${season}/episode/${episode}`, `&append_to_response=credits,external_ids`)
+export async function getTVPopular() {
+  return tmdbFetch(`/tv/popular`)
 }
 
-export async function searchMulti(query: string, page = 1) {
-  return fetchTMDB<any>(`/search/multi`, `&query=${encodeURIComponent(query)}&page=${page}`)
+export async function getTVTopRated() {
+  return tmdbFetch(`/tv/top_rated`)
 }
 
-export function getImageUrl(path: string | null, size = "w500") {
-  if (!path) return null
-  return `https://image.tmdb.org/t/p/${size}${path}`
+export async function getGenres() {
+  return tmdbFetch(`/genre/movie/list`)
 }
 
-export function getBackdropUrl(path: string | null) {
-  if (!path) return null
-  return `https://image.tmdb.org/t/p/original${path}`
+export function imgUrl(path: string, size = "w500") {
+  if (!path) return "/placeholder.svg"
+  return `${IMG}${size}${path}`
+}
+
+export function imgOriginal(path: string) {
+  if (!path) return "/placeholder.svg"
+  return `${IMG}original${path}`
 }

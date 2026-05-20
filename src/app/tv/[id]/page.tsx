@@ -1,174 +1,164 @@
 "use client"
 
-import { use, useEffect, useState } from "react"
+import { useEffect, useState } from "react"
+import { useParams } from "next/navigation"
 import Link from "next/link"
-import { getTVDetails, getImageUrl, getBackdropUrl } from "@/lib/tmdb"
-import MovieCard from "@/components/MovieCard"
+import { getTV, imgUrl, imgOriginal } from "@/lib/tmdb"
+import ContentRow from "@/components/ContentRow"
 
-export default function TVPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = use(params)
-  const [show, setShow] = useState<any>(null)
+export default function TVPage() {
+  const { id } = useParams()
+  const [data, setData] = useState<any>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    setLoading(true)
-    getTVDetails(Number(id))
-      .then(setShow)
-      .catch(() => setShow(null))
-      .finally(() => setLoading(false))
+    async function fetch() {
+      try {
+        const t = await getTV(Number(id))
+        setData(t)
+      } catch {
+        // no fallback for TV
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetch()
   }, [id])
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="w-10 h-10 border-2 border-[#e50914] border-t-transparent rounded-full animate-spin" />
+      <div style={{ padding: 48 }}>
+        <div className="skeleton" style={{ width: "60%", height: 36, marginBottom: 16 }} />
+        <div className="skeleton" style={{ width: "40%", height: 20, marginBottom: 12 }} />
+        <div className="skeleton" style={{ width: "100%", height: 200 }} />
       </div>
     )
   }
 
-  if (!show) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-screen gap-4">
-        <p className="text-zinc-500">Show not found</p>
-        <Link href="/" className="text-[#e50914] hover:underline">Go home</Link>
-      </div>
-    )
-  }
+  if (!data) return <div className="section"><h2>Show not found</h2></div>
 
-  const backdrop = getBackdropUrl(show.backdrop_path)
-  const poster = getImageUrl(show.poster_path, "w342")
+  const cast = data.credits?.cast?.slice(0, 10) || []
+  const seasons = data.seasons?.filter((s: any) => s.season_number > 0) || []
+  const recs = data.recommendations?.results?.filter((r: any) => r.poster_path)?.slice(0, 10) || []
 
   return (
-    <div className="pb-16">
-      <div className="relative w-full h-[60vh] min-h-[450px]">
-        {backdrop && (
-          <>
-            <img src={backdrop} alt="" className="w-full h-full object-cover" />
-            <div className="absolute inset-0 hero-gradient" />
-          </>
+    <>
+      <section className="detail-hero">
+        {data.backdrop_path && (
+          <div
+            className="hero-backdrop"
+            style={{ backgroundImage: `url(${imgOriginal(data.backdrop_path)})` }}
+          />
         )}
-        {!backdrop && <div className="absolute inset-0 bg-zinc-900" />}
-        <div className="absolute top-6 left-6 z-10">
-          <Link href="/" className="inline-flex items-center gap-1.5 text-zinc-400 hover:text-white transition-colors text-sm">
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-            </svg>
-            Back
-          </Link>
-        </div>
-      </div>
+        <div className="hero-overlay" />
+      </section>
 
-      <div className="px-6 lg:px-16 -mt-48 relative z-20">
-        <div className="flex flex-col md:flex-row gap-8 mb-10">
-          {poster && (
-            <div className="w-[200px] flex-shrink-0 rounded-lg overflow-hidden shadow-2xl shadow-black/50 -mt-8">
-              <img src={poster} alt={show.name} className="w-full aspect-[2/3] object-cover" />
-            </div>
+      <div className="detail-content">
+        <div className="detail-poster">
+          {data.poster_path ? (
+            <img src={imgUrl(data.poster_path, "w500")} alt={data.name} />
+          ) : (
+            <div className="placeholder-img" style={{ aspectRatio: "2/3" }}>?</div>
           )}
-          <div className="flex-1 pt-4 md:pt-16">
-            <h1 className="text-4xl sm:text-5xl font-bold text-white mb-3">{show.name}</h1>
-            <div className="flex flex-wrap items-center gap-3 text-sm text-zinc-400 mb-4">
-              {show.first_air_date && <span>{show.first_air_date.split("-")[0]}</span>}
-              {show.number_of_seasons > 0 && <><span className="w-1 h-1 bg-zinc-600 rounded-full" /><span>{show.number_of_seasons} Seasons</span></>}
-              {show.number_of_episodes > 0 && <><span className="w-1 h-1 bg-zinc-600 rounded-full" /><span>{show.number_of_episodes} Episodes</span></>}
-              {show.vote_average > 0 && <><span className="w-1 h-1 bg-zinc-600 rounded-full" />
-                <span className="flex items-center gap-1 text-yellow-400 font-medium">
-                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+        </div>
+        <div className="detail-info">
+          <h1>{data.name}</h1>
+          <div className="detail-meta">
+            <span>{data.first_air_date?.slice(0, 4)}</span>
+            <span>{data.number_of_seasons} Seasons</span>
+            <span>{data.number_of_episodes} Episodes</span>
+            <div className="detail-stars">
+              {Array.from({ length: 5 }).map((_, i) => {
+                const val = data.vote_average / 2
+                return (
+                  <svg key={i} viewBox="0 0 20 20" fill="currentColor" className={i < val ? "" : "empty"}>
                     <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
                   </svg>
-                  {show.vote_average.toFixed(1)}
-                </span>
-              </>}
-              {show.status && <><span className="w-1 h-1 bg-zinc-600 rounded-full" /><span>{show.status}</span></>}
-            </div>
-            <div className="flex flex-wrap gap-2 mb-4">
-              {show.genres?.map((g: any) => (
-                <span key={g.id} className="px-3 py-1 bg-white/10 rounded-full text-xs text-zinc-300">
-                  {g.name}
-                </span>
-              ))}
-            </div>
-            {show.tagline && <p className="text-zinc-500 italic mb-3 text-sm">{show.tagline}</p>}
-            <p className="text-zinc-300 leading-relaxed max-w-3xl text-sm">{show.overview}</p>
-          </div>
-        </div>
-
-        <div className="mb-10">
-          <h2 className="text-xl font-bold text-white mb-4">Seasons</h2>
-          {show.seasons?.length > 0 ? (
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
-              {show.seasons.map((season: any) => {
-                const seasonPoster = getImageUrl(season.poster_path, "w342")
-                return (
-                  <Link
-                    key={season.id}
-                    href={`/tv/${id}/season/${season.season_number}/episode/1`}
-                    className="group"
-                  >
-                    <div className="aspect-[2/3] rounded-lg overflow-hidden bg-zinc-800 mb-2 transition-transform duration-300 group-hover:scale-105 group-hover:shadow-xl group-hover:shadow-[#e50914]/10">
-                      {seasonPoster ? (
-                        <img src={seasonPoster} alt={season.name} className="w-full h-full object-cover" />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center text-zinc-600 text-sm p-2 text-center">
-                          {season.name}
-                        </div>
-                      )}
-                    </div>
-                    <p className="text-sm text-white font-medium truncate">{season.name}</p>
-                    <p className="text-xs text-zinc-500">{season.episode_count} episodes</p>
-                  </Link>
                 )
               })}
+              <span className="detail-rating-text">{data.vote_average?.toFixed(1)}</span>
             </div>
-          ) : (
-            <p className="text-zinc-500 text-sm">No season information available.</p>
+          </div>
+          <div className="detail-tags">
+            {(data.genres || []).map((g: any) => (
+              <span key={g.name} className="detail-tag">{g.name}</span>
+            ))}
+          </div>
+          <p className="detail-overview">{data.overview}</p>
+
+          {seasons.length > 0 && (
+            <div style={{ marginBottom: 32 }}>
+              <h3 style={{ marginBottom: 16, fontSize: 18 }}>Seasons</h3>
+              <div style={{ display: "flex", gap: 12, overflowX: "auto", paddingBottom: 8 }}>
+                {seasons.map((s: any) => (
+                  <Link
+                    key={s.season_number}
+                    href={`/tv/${data.id}/season/${s.season_number}/episode/1`}
+                    className="movie-card"
+                    style={{ width: 140 }}
+                  >
+                    <div className="movie-card-poster">
+                      {s.poster_path ? (
+                        <img src={imgUrl(s.poster_path, "w185")} alt={s.name} loading="lazy" />
+                      ) : (
+                        <div className="placeholder-img" style={{ aspectRatio: "2/3" }}>?</div>
+                      )}
+                    </div>
+                    <div className="movie-card-info">
+                      <div className="movie-card-title">{s.name}</div>
+                      <div className="movie-card-year">{s.episode_count} episodes</div>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {cast.length > 0 && (
+            <div>
+              <h3 style={{ marginBottom: 16, fontSize: 18 }}>Cast</h3>
+              <div className="cast-list">
+                {cast.map((c: any) => (
+                  <div key={c.id} className="cast-card">
+                    {c.profile_path ? (
+                      <img src={imgUrl(c.profile_path, "w185")} alt={c.name} />
+                    ) : (
+                      <div style={{ width: 80, height: 80, borderRadius: "50%", background: "var(--bg-card)", margin: "0 auto 8px", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--text-muted)", fontSize: 24 }}>?</div>
+                    )}
+                    <div className="cast-name">{c.name}</div>
+                    <div className="cast-role">{c.character}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
           )}
         </div>
-
-        {show.credits?.cast?.length > 0 && (
-          <div className="mb-10">
-            <h2 className="text-xl font-bold text-white mb-4">Cast</h2>
-            <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-hide" style={{ scrollbarWidth: "none" }}>
-              {show.credits.cast.slice(0, 15).map((person: any) => (
-                <div key={person.id} className="flex-shrink-0 w-[100px] text-center">
-                  <div className="w-[100px] h-[100px] rounded-full overflow-hidden bg-zinc-800 mx-auto mb-2 ring-2 ring-white/10">
-                    {person.profile_path ? (
-                      <img src={getImageUrl(person.profile_path, "w185")!} alt={person.name} className="w-full h-full object-cover" />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center text-zinc-600">
-                        <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                        </svg>
-                      </div>
-                    )}
-                  </div>
-                  <p className="text-xs text-white font-medium truncate">{person.name}</p>
-                  <p className="text-[10px] text-zinc-500 truncate">{person.character}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {show.recommendations?.results?.length > 0 && (
-          <div className="mb-10">
-            <h2 className="text-xl font-bold text-white mb-4">You Might Also Like</h2>
-            <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide" style={{ scrollbarWidth: "none" }}>
-              {show.recommendations.results.slice(0, 10).map((item: any) => (
-                <MovieCard
-                  key={item.id}
-                  id={item.id}
-                  title={item.title || item.name || ""}
-                  poster={item.poster_path}
-                  rating={item.vote_average || 0}
-                  year={(item.release_date || item.first_air_date || "").split("-")[0]}
-                  mediaType={item.title ? "movie" : "tv"}
-                />
-              ))}
-            </div>
-          </div>
-        )}
       </div>
-    </div>
+
+      {recs.length > 0 && (
+        <section className="section" style={{ marginTop: 0 }}>
+          <div className="section-header">
+            <h2 className="section-title">More Like This</h2>
+          </div>
+          <div className="movie-grid">
+            {recs.map((r: any) => (
+              <Link key={r.id} href={`/tv/${r.id}`} className="movie-card">
+                <div className="movie-card-poster">
+                  {r.poster_path ? (
+                    <img src={imgUrl(r.poster_path, "w342")} alt={r.name} loading="lazy" />
+                  ) : (
+                    <div className="placeholder-img">?</div>
+                  )}
+                </div>
+                <div className="movie-card-info">
+                  <div className="movie-card-title">{r.name}</div>
+                  <div className="movie-card-year">{r.first_air_date?.slice(0, 4)}</div>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </section>
+      )}
+    </>
   )
 }
