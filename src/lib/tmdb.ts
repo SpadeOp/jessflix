@@ -5,11 +5,21 @@ const options = {
   headers: { Authorization: `Bearer ${API_KEY}`, "Content-Type": "application/json" },
 }
 
+const emptyResponse = { page: 1, results: [], total_pages: 0, total_results: 0 }
+
 async function fetchTMDB<T>(endpoint: string, params = ""): Promise<T> {
   const url = `${TMDB_BASE}${endpoint}?language=en-US${params}`
-  const res = await fetch(url, { ...options, next: { revalidate: 3600 } })
-  if (!res.ok) throw new Error(`TMDB error: ${res.status}`)
-  return res.json()
+  const controller = new AbortController()
+  const timeout = setTimeout(() => controller.abort(), 8000)
+  try {
+    const res = await fetch(url, { ...options, signal: controller.signal, next: { revalidate: 3600 } })
+    if (!res.ok) throw new Error(`TMDB error: ${res.status}`)
+    return res.json()
+  } catch {
+    return emptyResponse as T
+  } finally {
+    clearTimeout(timeout)
+  }
 }
 
 export async function getTrending(page = 1) {
