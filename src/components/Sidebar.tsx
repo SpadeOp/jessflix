@@ -19,9 +19,9 @@ export default function Sidebar() {
     <>
       <button
         onClick={() => setOpen(!open)}
-        className="fixed top-4 left-4 z-50 lg:hidden w-10 h-10 bg-zinc-900/90 rounded-lg flex items-center justify-center"
+        className="fixed top-4 left-4 z-50 lg:hidden w-10 h-10 bg-zinc-900/80 backdrop-blur border border-zinc-800 rounded-lg flex items-center justify-center"
       >
-        <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           {open ? (
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
           ) : (
@@ -30,18 +30,16 @@ export default function Sidebar() {
         </svg>
       </button>
 
-      {open && (
-        <div className="fixed inset-0 bg-black/50 z-40 lg:hidden" onClick={() => setOpen(false)} />
-      )}
+      {open && <div className="fixed inset-0 bg-black/70 z-40 lg:hidden" onClick={() => setOpen(false)} />}
 
       <aside
-        className={`fixed lg:sticky top-0 left-0 h-screen w-64 bg-zinc-900/95 backdrop-blur-xl border-r border-zinc-800 z-40 flex flex-col transition-transform duration-300 ${
+        className={`fixed top-0 left-0 h-full w-64 bg-[#0a0a0a] border-r border-zinc-800/50 z-40 flex flex-col transition-transform duration-300 ${
           open ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
         }`}
       >
-        <div className="p-6 border-b border-zinc-800">
-          <Link href="/" className="flex items-center gap-2">
-            <span className="text-2xl font-bold text-red-600">Jess</span>
+        <div className="p-6 border-b border-zinc-800/50">
+          <Link href="/" className="flex items-center gap-1">
+            <span className="text-2xl font-bold text-[#e50914]">Jess</span>
             <span className="text-2xl font-bold text-white">Flix</span>
           </Link>
         </div>
@@ -54,22 +52,22 @@ export default function Sidebar() {
                 key={item.href}
                 href={item.href}
                 onClick={() => setOpen(false)}
-                className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors ${
+                className={`flex items-center gap-3 px-4 py-2.5 rounded-lg transition-all ${
                   isActive
-                    ? "bg-red-600/20 text-red-500"
-                    : "text-zinc-400 hover:text-white hover:bg-zinc-800"
+                    ? "bg-white/10 text-white font-medium"
+                    : "text-zinc-400 hover:text-white hover:bg-white/5"
                 }`}
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d={item.icon} />
                 </svg>
-                <span className="text-sm font-medium">{item.label}</span>
+                <span className="text-sm">{item.label}</span>
               </Link>
             )
           })}
         </nav>
 
-        <div className="p-4 border-t border-zinc-800">
+        <div className="p-4 border-t border-zinc-800/50">
           <p className="text-xs text-zinc-600">JessFlix v1.0</p>
         </div>
       </aside>

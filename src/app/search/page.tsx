@@ -67,7 +67,15 @@ function SearchContent() {
           </p>
           <div className="flex flex-wrap gap-4 justify-center">
             {results.map((item) => (
-              <MovieCard key={item.id} item={item} />
+              <MovieCard
+                key={item.id}
+                id={item.id}
+                title={(item as any).title || (item as any).name || ""}
+                poster={(item as any).poster_path}
+                rating={(item as any).vote_average || 0}
+                year={((item as any).release_date || (item as any).first_air_date || "").split("-")[0]}
+                mediaType={(item as any).media_type === "tv" ? "tv" : "movie"}
+              />
             ))}
           </div>
         </>

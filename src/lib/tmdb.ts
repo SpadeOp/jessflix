@@ -9,16 +9,12 @@ const emptyResponse = { page: 1, results: [], total_pages: 0, total_results: 0 }
 
 async function fetchTMDB<T>(endpoint: string, params = ""): Promise<T> {
   const url = `${TMDB_BASE}${endpoint}?language=en-US${params}`
-  const controller = new AbortController()
-  const timeout = setTimeout(() => controller.abort(), 8000)
   try {
-    const res = await fetch(url, { ...options, signal: controller.signal, next: { revalidate: 3600 } })
+    const res = await fetch(url, { ...options })
     if (!res.ok) throw new Error(`TMDB error: ${res.status}`)
     return res.json()
   } catch {
     return emptyResponse as T
-  } finally {
-    clearTimeout(timeout)
   }
 }
 
@@ -54,10 +50,6 @@ export async function getTopRated(page = 1) {
   return fetchTMDB<any>(`/movie/top_rated`, `&page=${page}`)
 }
 
-export async function getUpcoming(page = 1) {
-  return fetchTMDB<any>(`/movie/upcoming`, `&page=${page}`)
-}
-
 export async function getMovieDetails(id: number) {
   return fetchTMDB<any>(`/movie/${id}`, `&append_to_response=credits,videos,similar,recommendations,external_ids`)
 }
@@ -76,16 +68,6 @@ export async function getTVEpisodeDetails(id: number, season: number, episode: n
 
 export async function searchMulti(query: string, page = 1) {
   return fetchTMDB<any>(`/search/multi`, `&query=${encodeURIComponent(query)}&page=${page}`)
-}
-
-export async function getDiscoverMovie(page = 1, genre?: string) {
-  const genreParam = genre ? `&with_genres=${genre}` : ""
-  return fetchTMDB<any>(`/discover/movie`, `&sort_by=popularity.desc&page=${page}${genreParam}`)
-}
-
-export async function getDiscoverTV(page = 1, genre?: string) {
-  const genreParam = genre ? `&with_genres=${genre}` : ""
-  return fetchTMDB<any>(`/discover/tv`, `&sort_by=popularity.desc&page=${page}${genreParam}`)
 }
 
 export function getImageUrl(path: string | null, size = "w500") {
