@@ -3,34 +3,55 @@
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 
-const links = [
-  { href: "/", label: "Home", icon: "M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" },
-  { href: "/search", label: "Search", icon: "M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" },
-  { href: "/movies", label: "Movies", icon: "M7 4v16M17 4v16M3 8h4m10 0h4M3 12h18M3 16h4m10 0h4M4 20h16a1 1 0 001-1V5a1 1 0 00-1-1H4a1 1 0 00-1 1v14a1 1 0 001 1z" },
-  { href: "/tv", label: "TV Shows", icon: "M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" },
-  { href: "/library", label: "My Library", icon: "M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" },
-]
-
 export default function Sidebar() {
   const path = usePathname()
+  const route = path === "/" ? "home" : path.split("/")[1] || "home"
 
   return (
-    <nav className="sidebar">
-      <div className="sidebar-logo">JF</div>
-      <div className="sidebar-nav">
-        {links.map(l => (
-          <Link
-            key={l.href}
-            href={l.href}
-            className={`sidebar-link ${path === l.href ? "active" : ""}`}
-          >
-            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d={l.icon} />
-            </svg>
-            <span>{l.label}</span>
-          </Link>
-        ))}
+    <aside className="sidebar" id="sidebar">
+      <Link href="/" className="logo-wrap">
+        <svg className="logo-icon" viewBox="0 0 40 40" fill="none">
+          <defs>
+            <linearGradient id="lg" x1="0" y1="0" x2="40" y2="40">
+              <stop offset="0%" stopColor="#f5c518" /><stop offset="100%" stopColor="#e69500" />
+            </linearGradient>
+          </defs>
+          <rect x="2" y="2" width="36" height="36" rx="10" fill="url(#lg)" />
+          <polygon points="16,12 28,20 16,28" fill="#0a0a16" />
+          <path d="M28 12h3v16h-3z" fill="#0a0a16" />
+          <path d="M6 30C6 26.5 8.5 24 12 24h4v6H6z" fill="#fff" opacity="0.9" />
+          <circle cx="33" cy="7" r="6" fill="#f5c518" />
+          <text x="33" y="9" textAnchor="middle" fill="#0a0a16" fontSize="7" fontWeight="bold">&#9733;</text>
+        </svg>
+        <span className="logo-text">JessFlix</span>
+      </Link>
+
+      <div className="nav-items">
+        <Link href="/" className={`nav-item ${route === "home" ? "active" : ""}`}>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+          <span className="label">Home</span>
+        </Link>
+
+        <Link href="/search" className={`nav-item ${route === "search" ? "active" : ""}`}>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <span className="label">Search</span>
+        </Link>
+
+        <Link href="/movies" className={`nav-item ${route === "movies" ? "active" : ""}`}>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="2" y="2" width="20" height="20" rx="2.18"/><line x1="7" y1="2" x2="7" y2="22"/><line x1="17" y1="2" x2="17" y2="22"/><line x1="2" y1="12" x2="22" y2="12"/><line x1="2" y1="7" x2="7" y2="7"/><line x1="2" y1="17" x2="7" y2="17"/><line x1="17" y1="7" x2="22" y2="7"/><line x1="17" y1="17" x2="22" y2="17"/></svg>
+          <span className="label">Movies</span>
+        </Link>
+
+        <Link href="/tv" className={`nav-item ${route === "tv" ? "active" : ""}`}>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="2" y="7" width="20" height="15" rx="2"/><polyline points="17,2 12,7 7,2"/></svg>
+          <span className="label">TV Shows</span>
+        </Link>
+
+        <Link href="/library" className={`nav-item ${route === "library" ? "active" : ""}`}>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+          <span className="label">Library</span>
+        </Link>
       </div>
-    </nav>
+    </aside>
   )
 }

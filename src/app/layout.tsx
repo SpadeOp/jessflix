@@ -1,6 +1,6 @@
 import type { Metadata } from "next"
 import "./globals.css"
-import Sidebar from "@/components/Sidebar"
+import ClientLayout from "@/components/ClientLayout"
 
 export const metadata: Metadata = {
   title: "JessFlix - Stream Movies & TV Shows",
@@ -11,12 +11,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en">
       <body>
-        <div className="app-layout">
-          <Sidebar />
-          <main className="main-content">
-            {children}
-          </main>
-        </div>
+        <ClientLayout>{children}</ClientLayout>
       </body>
     </html>
   )

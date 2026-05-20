@@ -1,92 +1,60 @@
 "use client"
 
-import { Suspense, useEffect, useState, useCallback } from "react"
-import { useSearchParams, useRouter } from "next/navigation"
-import { searchMulti } from "@/lib/tmdb"
-import { fallbackMovies } from "@/lib/data"
-import MovieCard from "@/components/MovieCard"
+import { Suspense, useState, useEffect } from "react"
+import { useSearchParams } from "next/navigation"
+import { movies } from "@/lib/data"
+import Card from "@/components/Card"
+import { tmdbImg } from "@/lib/tmdb"
 
 function SearchInner() {
-  const router = useRouter()
   const params = useSearchParams()
   const q = params.get("q") || ""
   const [query, setQuery] = useState(q)
   const [results, setResults] = useState<any[]>([])
-  const [loading, setLoading] = useState(false)
 
-  const doSearch = useCallback(async (term: string) => {
-    if (!term.trim()) { setResults([]); return }
-    setLoading(true)
-    try {
-      const data = await searchMulti(term)
-      setResults(data.results?.filter((r: any) => r.poster_path && (r.media_type === "movie" || r.media_type === "tv")) || [])
-    } catch {
-      const fb = fallbackMovies.filter(m =>
-        m.title.toLowerCase().includes(term.toLowerCase())
-      )
-      setResults(fb.map(m => ({
-        id: m.id,
-        title: m.title,
-        poster_path: m.poster,
-        release_date: `${m.year}-01-01`,
-        vote_average: m.rating,
-        media_type: "movie",
-      })))
-    } finally {
-      setLoading(false)
-    }
+  useEffect(() => {
+    movies.forEach((m: any) => {
+      m._poster = m.poster ? tmdbImg(m.poster, "w500") : undefined
+    })
   }, [])
 
   useEffect(() => {
-    if (q) doSearch(q)
-  }, [q, doSearch])
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    if (query.trim()) {
-      router.push(`/search?q=${encodeURIComponent(query.trim())}`)
-    }
-  }
+    if (!query.trim()) { setResults([]); return }
+    const r = movies.filter(m => m.title.toLowerCase().includes(query.toLowerCase()))
+    setResults(r)
+  }, [query])
 
   return (
     <div className="search-page">
-      <form onSubmit={handleSubmit} style={{ marginBottom: 32 }}>
-        <div className="header-search" style={{ maxWidth: 500, borderRadius: 12 }}>
-          <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-          </svg>
-          <input
-            type="text"
-            placeholder="Search movies & TV..."
-            value={query}
-            onChange={e => setQuery(e.target.value)}
-            autoFocus
-          />
+      <div className="page-header">
+        <h1>Search</h1>
+      </div>
+      <div className="search-box" style={{ maxWidth: 500, marginBottom: "1.5rem" }}>
+        <input type="text" placeholder="Movies..." value={query} onChange={e => setQuery(e.target.value)} />
+        <button>&#128269;</button>
+      </div>
+      {query && (
+        <div className="search-results-info">
+          {results.length} result{results.length !== 1 ? "s" : ""} for &quot;{query}&quot;
         </div>
-      </form>
-
-      {q && (
-        <p className="search-results-count">
-          {loading ? "Searching..." : `${results.length} results for "${q}"`}
-        </p>
       )}
-
       {results.length > 0 ? (
-        <div className="movie-grid">
-          {results.map((item: any) => (
-            <MovieCard key={item.id} item={item} />
-          ))}
+        <div className="content-grid">
+          {results.map(m => <Card key={m.id} item={m} />)}
         </div>
-      ) : q && !loading ? (
-        <p style={{ color: "var(--text-muted)" }}>No results found</p>
-      ) : null}
+      ) : query ? (
+        <div className="no-results">No results found.</div>
+      ) : (
+        <div className="search-results-info">Type to search movies.</div>
+      )}
+      <footer><p>JessFlix &copy; 2024</p></footer>
     </div>
   )
 }
 
 export default function SearchPage() {
   return (
-    <Suspense fallback={<div className="search-page"><p>Loading...</p></div>}>
+    <Suspense fallback={<div className="loading" />}>
       <SearchInner />
     </Suspense>
   )

@@ -1,25 +1,27 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { getTVPopular } from "@/lib/tmdb"
-import { fallbackMovies, shuffleArray } from "@/lib/data"
-import MovieCard from "@/components/MovieCard"
+import { movies, genres } from "@/lib/data"
+import { tmdbImg } from "@/lib/tmdb"
+import Card from "@/components/Card"
 
 export default function TVPage() {
-  const [items, setItems] = useState<any[]>([])
-
+  const [ready, setReady] = useState(false)
   useEffect(() => {
-    getTVPopular()
-      .then(d => setItems(d.results.filter((r: any) => r.poster_path)))
-      .catch(() => setItems(shuffleArray(fallbackMovies).map(m => ({ ...m, name: m.title, first_air_date: `${m.year}-01-01`, media_type: "tv" }))))
+    movies.forEach((m: any) => { m._poster = m.poster ? tmdbImg(m.poster, "w500") : undefined })
+    setReady(true)
   }, [])
+  if (!ready) return null
 
   return (
-    <div className="search-page">
-      <h1 style={{ fontSize: 28, fontWeight: 800, marginBottom: 24 }}>TV Shows</h1>
-      <div className="movie-grid">
-        {items.map(item => <MovieCard key={item.id} item={item} />)}
+    <>
+      <div className="page-header"><h1>TV Shows</h1></div>
+      <div className="content-grid">
+        {movies.slice(0, 12).map((m, i) => (
+          <Card key={100 + i} item={{ ...m, id: 100 + i, title: m.title + " (Series)" }} />
+        ))}
       </div>
-    </div>
+      <footer><p>JessFlix &copy; 2024</p></footer>
+    </>
   )
 }
